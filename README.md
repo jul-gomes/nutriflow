@@ -1,4 +1,4 @@
-# NutriFlow AI — Smart Meal & Supply
+# NutriFlow — Smart Meal & Supply
 
 Aplicação web desenvolvida para planejamento nutricional inteligente e gestão financeira de compras, integrando orquestração multi-agente, engenharia de prompt e análise de dados.
 
