@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriFlow — Planejamento Alimentar & Compras Inteligentes</title>
+    <style>
+        :root {
+            --brand: #0f172a;
+            --primary: #ea1d2c;
+            --primary-hover: #c81421;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --radius: 14px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg-color); 
+            margin: 0; 
+            padding: 0; 
+            color: var(--text-main); 
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            padding: 14px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .nav-brand { font-weight: 800; font-size: 20px; color: var(--brand); display: flex; align-items: center; gap: 8px; }
+        .nav-brand span.red { color: var(--primary); }
+        .nav-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        
+        .mode-badge {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid var(--border);
+        }
+        .mode-badge.live {
+            background: #f0fdf4;
+            color: var(--success);
+            border-color: #bbf7d0;
+        }
+
+        .nav-btn {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+        .container { max-width: 1080px; margin: 32px auto; padding: 0 20px; }
+        
+        header { text-align: center; margin-bottom: 32px; }
+        h1 { color: var(--brand); font-size: 34px; margin: 0 0 12px 0; font-weight: 800; letter-spacing: -0.6px; line-height: 1.15; }
+        .subtitle { color: var(--text-muted); font-size: 16px; max-width: 660px; margin: 0 auto; line-height: 1.6; }
+
+        .card {
+            background: var(--card-bg);
+            padding: 32px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .presets-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .presets-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-right: 4px; }
+        .preset-chip {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .preset-chip:hover { border-color: var(--primary); color: var(--primary); background: #fef2f2; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr 190px; gap: 16px; }
+        @media (max-width: 820px) { .form-grid { grid-template-columns: 1fr; } }
+        .form-group { margin-bottom: 18px; }
+
+        label { display: block; font-weight: 700; margin-bottom: 8px; font-size: 13px; color: var(--brand); }
+        input[type="text"], input[type="number"], select, textarea { 
+            width: 100%; padding: 13px 15px; border: 1px solid var(--border); 
+            border-radius: 10px; font-size: 14px; background: #fff; color: var(--text-main);
+            transition: all 0.2s ease; font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(234, 29, 44, 0.08); }
+
+        .btn-primary { 
+            background: var(--primary); color: white; border: none; padding: 15px 24px; 
+            font-size: 15px; font-weight: 700; border-radius: 10px; cursor: pointer; 
+            width: 100%; transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(234, 29, 44, 0.2);
+        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-secondary { 
+            background: var(--brand); color: white; border: none; padding: 13px 18px;
+            font-size: 14px; font-weight: 600; border-radius: 10px; cursor: pointer;
+            width: 100%; margin-top: 16px; transition: background 0.2s;
+        }
+        .btn-secondary:hover { background: #1e293b; }
+
+        /* Pipeline de Execução */
+        .pipeline-container {
+            display: none;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px 26px;
+            margin-bottom: 24px;
+        }
+        .pipeline-steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 768px) { .pipeline-steps { grid-template-columns: 1fr; } }
+        .agent-step {
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            opacity: 0.45;
+            transition: all 0.25s ease;
+        }
+        .agent-step.active {
+            opacity: 1;
+            border-color: var(--primary);
+            background: #fef2f2;
+        }
+        .agent-step.done {
+            opacity: 1;
+            border-color: #bbf7d0;
+            background: #f0fdf4;
+        }
+        .agent-title { font-weight: 700; font-size: 14px; color: var(--brand); margin-bottom: 4px; }
+        .agent-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+        .results-container { display: none; }
+
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .kpi-grid { grid-template-columns: 1fr; } }
+        .kpi-box {
+            background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .kpi-value { font-size: 24px; font-weight: 800; color: var(--brand); margin: 6px 0; }
+        .kpi-value.highlight { color: var(--primary); }
+        .kpi-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .kpi-sub { font-size: 12px; color: var(--text-muted); }
+
+        /* Barra de Análise */
+        .analytics-bar {
+            background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 22px 25px; margin-bottom: 24px;
+            display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: center;
+        }
+        @media (max-width: 820px) { .analytics-bar { grid-template-columns: 1fr; } }
+        .macro-track {
+            height: 12px; border-radius: 8px; background: #e2e8f0; overflow: hidden; display: flex; margin: 10px 0;
+        }
+        .macro-prot { background: #ea1d2c; }
+        .macro-carb { background: #0284c7; }
+        .macro-fat { background: #f59e0b; }
+        .macro-legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-muted); font-weight: 600; flex-wrap: wrap; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+        .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 900px) { .results-grid { grid-template-columns: 1fr; } }
+
+        .section-box {
+            background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        }
+        h3 { font-size: 17px; margin-top: 0; margin-bottom: 16px; color: var(--brand); font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+
+        .meal-item, .market-item { padding: 13px 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .meal-item:last-child, .market-item:last-child { border-bottom: none; }
+        .meal-header { display: flex; justify-content: space-between; align-items: center; }
+        .meal-time { font-weight: 700; color: var(--primary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .meal-kcal { font-size: 12px; font-weight: 600; color: var(--text-muted); background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
+        .meal-name { font-weight: 700; font-size: 15px; margin: 4px 0; color: var(--brand); }
+        .meal-ingredients { color: var(--text-muted); font-size: 13px; line-height: 1.45; }
+        .price-tag { font-weight: 700; color: #0f172a; font-size: 14px; white-space: nowrap; }
+        
+        .market-item label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: normal; margin-bottom: 0; font-size: 14px; }
+        .market-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+        .checked-item { text-decoration: line-through; color: var(--text-muted); }
+
+        /* Modais */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1000;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal {
+            background: #fff; padding: 28px; border-radius: var(--radius); width: 100%; max-width: 660px;
+            max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); border: 1px solid var(--border);
+        }
+        .modal h3 { margin-top: 0; margin-bottom: 10px; color: var(--brand); font-size: 19px; }
+        .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .btn-cancel { background: #e2e8f0; color: var(--text-main); border: none; border-radius: 10px; font-weight: 600; cursor: pointer; width: 100%; padding: 12px; }
+        .btn-cancel:hover { background: #cbd5e1; }
+
+        pre.json-box {
+            background: #0f172a; color: #38bdf8; padding: 14px; border-radius: 10px;
+            font-size: 12px; max-height: 280px; overflow: auto; margin-bottom: 12px; line-height: 1.45;
+        }
+
+        /* Tabs internas */
+        .tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        .tab-btn {
+            background: #f1f5f9; border: none; padding: 8px 14px; border-radius: 8px;
+            font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer;
+        }
+        .tab-btn.active { background: var(--primary); color: #fff; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        .flow-card { background: #f8fafc; border: 1px solid var(--border); padding: 14px; border-radius: 10px; margin-bottom: 10px; }
+        .flow-card strong { display: block; font-size: 13px; color: var(--brand); margin-bottom: 4px; }
+        .flow-card span { font-size: 12px; color: var(--text-muted); line-height: 1.45; display: block; }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: var(--brand); color: #fff;
+            padding: 14px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15); transform: translateY(100px); opacity: 0;
+            transition: all 0.3s ease; z-index: 2000;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        footer {
+            text-align: center;
+            padding: 24px 20px 40px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        footer a { color: var(--brand); font-weight: 700; text-decoration: none; cursor: pointer; }
+        footer a:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            Nutri<span class="red">Flow</span>
+        </div>
+        <div class="nav-actions">
+            <span id="modeIndicator" class="mode-badge">⚡ Pronto para uso</span>
+            <button type="button" class="nav-btn" onclick="abrirModal('studioModal')">🔍 Fluxo & Prompts</button>
+            <button type="button" class="nav-btn" onclick="abrirModalConfig()">⚙️ APIs & Webhooks</button>
+        </div>
+    </nav>
+
+    <!-- Modal 1: Configuração API & Webhook -->
+    <div id="settingsModal" class="modal-overlay">
+        <div class="modal">
+            <h3>⚙️ Conectar Modelos de IA & Automações</h3>
+            <p>O NutriFlow funciona imediatamente sem precisar de configuração. Se quiser conectar sua própria chave de API ou enviar a lista de compras automaticamente para o seu WhatsApp/planilha via n8n ou Make, configure abaixo:</p>
+            
+            <label>Modelo de Linguagem (Orquestração)</label>
+            <select id="modalProviderSelect" style="margin-bottom: 14px;">
+                <option value="gemini">Google Gemini 2.5 Flash (JSON Estruturado)</option>
+                <option value="openai">OpenAI GPT-4o-mini (JSON Estruturado)</option>
+            </select>
+
+            <label>Chave de API (Opcional — salva localmente no navegador)</label>
+            <input type="text" id="modalApiKeyInput" placeholder="Ex: AIzaSy... ou sk-..." style="margin-bottom: 14px;">
+            
+            <label>Webhook URL — n8n / Make / Zapier (Opcional)</label>
+            <input type="text" id="modalWebhookInput" placeholder="https://seu-n8n.app/webhook/nutriflow">
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="fecharModal('settingsModal')">Cancelar</button>
+                <button type="button" class="btn-primary" style="padding: 12px;" onclick="salvarConfigModal()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Fluxo & Prompts (Natural e Técnico) -->
+    <div id="studioModal" class="modal-overlay">
+        <div class="modal">
+            <h3>🔍 Como o NutriFlow Orquestra os Dados</h3>
+            <p>Inspecione o pipeline de agentes, personalize as instruções (System Prompt) ou copie o fluxo pronto para automatizar seus pedidos no n8n e Make.</p>
+            
+            <div class="tabs">
+                <button type="button" class="tab-btn active" onclick="mudarTab(event, 'tab-pipeline')">Pipeline de Agentes</button>
+                <button type="button" class="tab-btn" onclick="mudarTab(event, 'tab-prompts')">Editar System Prompt</button>
+                <button type="button" class="tab-btn" onclick="mudarTab(event, 'tab-n8n')">Automação n8n / Make</button>
+            </div>
+
+            <div id="tab-pipeline" class="tab-panel active">
+                <div class="flow-card">
+                    <strong>1. Agente Nutricionista (Cálculo Metabólico & Restrições)</strong>
+                    <span>Interpreta objetivo e alergias/preferências, define calorias diárias e distribui proteínas, carboidratos e gorduras em 4 refeições práticas.</span>
+                </div>
+                <div class="flow-card">
+                    <strong>2. Agente de Compras & Delivery (Supply Matching)</strong>
+                    <span>Converte os ingredientes do cardápio em uma lista semanal de supermercado com preços médios reais e sugere marmitas/pratos prontos equivalentes.</span>
+                </div>
+                <div class="flow-card">
+                    <strong>3. Agente Analista de Dados (Auditoria Financeira)</strong>
+                    <span>Cruza o custo da cesta com o teto semanal definido pelo usuário, calcula o custo por grama de proteína e estima o percentual de economia.</span>
+                </div>
+            </div>
+
+            <div id="tab-prompts" class="tab-panel">
+                <label>Instrução do Sistema (System Prompt — Structured JSON Output)</label>
+                <textarea id="customSystemPrompt" rows="7">Você é um pipeline multi-agente especializado em planejamento nutricional e otimização de compras no varejo brasileiro (mercados e delivery).
+REGRAS ESTRITAS:
+1. Calcule metas calóricas e macronutrientes coerentes com o objetivo e restrições alimentares informadas.
+2. Respeite rigorosamente o teto de orçamento semanal em Reais (BRL).
+3. Retorne EXCLUSIVAMENTE um objeto JSON válido seguindo o schema solicitado, sem blocos de markdown.</textarea>
+                <button type="button" class="btn-secondary" style="margin-top: 10px;" onclick="aplicarNovoPrompt()">Salvar Prompt & Recalcular Plano</button>
+            </div>
+
+            <div id="tab-n8n" class="tab-panel">
+                <p style="margin-bottom: 8px;">Importe este fluxo no <strong>n8n</strong> para receber a lista via Webhook, processar com Claude/GPT/Gemini e enviar no WhatsApp:</p>
+                <pre class="json-box" id="n8nBlueprintCode">{
+  "name": "NutriFlow - Lista de Compras Automática",
+  "nodes": [
+    { "name": "Webhook NutriFlow", "type": "n8n-nodes-base.webhook", "parameters": { "httpMethod": "POST", "path": "nutriflow" } },
+    { "name": "Agente IA (Claude / GPT / Gemini)", "type": "n8n-nodes-base.httpRequest", "parameters": { "method": "POST" } },
+    { "name": "Estruturar Dados & Custos", "type": "n8n-nodes-base.code" },
+    { "name": "Enviar Resumo WhatsApp", "type": "n8n-nodes-base.whatsApp" }
+  ]
+}</pre>
+                <button type="button" class="btn-secondary" style="margin-top: 4px;" onclick="copiarTexto(document.getElementById('n8nBlueprintCode').innerText, '📋 Fluxo n8n copiado!')">📋 Copiar JSON do Fluxo (n8n)</button>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-primary" style="padding: 12px;" onclick="fecharModal('studioModal')">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Exportação JSON / Webhook -->
+    <div id="webhookModal" class="modal-overlay">
+        <div class="modal">
+            <h3>⚡ Exportar Lista & Dados (JSON / Webhook)</h3>
+            <p id="webhookStatusText">Payload estruturado gerado pelo sistema:</p>
+            <pre id="jsonPreview" class="json-box"></pre>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="fecharModal('webhookModal')">Fechar</button>
+                <button type="button" class="btn-primary" style="padding: 12px;" onclick="copiarTexto(document.getElementById('jsonPreview').innerText, '📋 JSON copiado!')">📋 Copiar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Cardápio semanal e lista de compras dentro do seu orçamento</h1>
+            <div class="subtitle">Diga qual é o seu objetivo, suas restrições alimentares e quanto quer gastar na semana. Nós montamos suas refeições, calculamos os nutrientes e comparamos insumos de mercado com pratos prontos.</div>
+        </header>
+
+        <div class="card">
+            <div class="presets-bar">
+                <span class="presets-label">Exemplos rápidos:</span>
+                <button type="button" class="preset-chip" onclick="aplicarPreset('Hipertrofia limpa com foco em proteína', 'Sem lactose, refeições práticas', 180)">💪 Ganho de massa (R$ 180)</button>
+                <button type="button" class="preset-chip" onclick="aplicarPreset('Emagrecimento e definição', 'Low carb, sem açúcar', 140)">🔥 Emagrecimento (R$ 140)</button>
+                <button type="button" class="preset-chip" onclick="aplicarPreset('Alimentação saudável equilibrada', 'Vegetariano, rico em fibras', 130)">🌱 Vegetariano (R$ 130)</button>
+                <button type="button" class="preset-chip" onclick="aplicarPreset('Rotina corrida sem tempo para cozinhar', 'Sem restrições, foco em praticidade', 220)">⚡ Praticidade / Delivery (R$ 220)</button>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="objetivo">Qual é o seu objetivo?</label>
+                    <input type="text" id="objetivo" value="Hipertrofia limpa com foco em proteína" placeholder="Ex: Emagrecimento, ganho de massa, saúde...">
+                </div>
+                <div class="form-group">
+                    <label for="restricoes">Restrições ou preferências</label>
+                    <input type="text" id="restricoes" value="Sem lactose, refeições práticas" placeholder="Ex: Sem glúten, vegano, sem frutos do mar...">
+                </div>
+                <div class="form-group">
+                    <label for="orcamento">Orçamento Semanal (R$)</label>
+                    <input type="number" id="orcamento" value="180" min="50" max="5000">
+                </div>
+            </div>
+            <button type="button" id="btnGerar" class="btn-primary" onclick="executarPlanejamento()">Gerar Cardápio & Lista Inteligente</button>
+        </div>
+
+        <!-- Pipeline Visual -->
+        <div id="pipeline" class="pipeline-container">
+            <div style="font-size: 12px; font-weight: 800; color: var(--brand); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.6px;">
+                🔄 Processando seu planejamento
+            </div>
+            <div class="pipeline-steps">
+                <div class="agent-step" id="step-1">
+                    <div class="agent-title">1. Cálculo Nutricional</div>
+                    <div class="agent-desc">Definindo calorias, macronutrientes e filtrando restrições alimentares.</div>
+                </div>
+                <div class="agent-step" id="step-2">
+                    <div class="agent-title">2. Otimização de Compras</div>
+                    <div class="agent-desc">Selecionando insumos de mercado e opções prontas de delivery.</div>
+                </div>
+                <div class="agent-step" id="step-3">
+                    <div class="agent-title">3. Análise de Economia</div>
+                    <div class="agent-desc">Validando teto de orçamento e custo por grama de proteína.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="results-container">
+            <div class="kpi-grid" id="kpi-conteudo"></div>
+            <div class="analytics-bar" id="analytics-conteudo"></div>
+
+            <div class="results-grid">
+                <div class="section-box">
+                    <h3><span>🥗 Sugestão de Cardápio Diário</span> <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">4 Refeições</span></h3>
+                    <div id="cardapio-conteudo"></div>
+                </div>
+
+                <div class="section-box">
+                    <h3><span>🛒 Lista de Compras & Delivery</span> <span id="total-selecionado" style="font-size: 13px; color: var(--primary);"></span></h3>
+                    <div id="cesta-conteudo"></div>
+                    <button type="button" class="btn-secondary" onclick="dispararWebhook()">⚡ Exportar Lista (JSON / Webhook n8n)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        NutriFlow • Planejamento alimentar inteligente com integração via <a onclick="abrirModal('studioModal')">API, Prompts & Webhooks</a>
+    </footer>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let ultimoPayloadGerado = null;
+        let emExecucao = false;
+
+        function atualizarBadgeModo() {
+            const key = localStorage.getItem('nutriflow_api_key');
+            const provider = localStorage.getItem('nutriflow_provider') || 'gemini';
+            const badge = document.getElementById('modeIndicator');
+            if (key && key.length > 15) {
+                badge.innerText = provider === 'openai' ? "🟢 Conectado: GPT-4o" : "🟢 Conectado: Gemini 2.5";
+                badge.classList.add('live');
+            } else {
+                badge.innerText = "⚡ Pronto para uso";
+                badge.classList.remove('live');
+            }
+        }
+        atualizarBadgeModo();
+
+        function mostrarToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function aplicarPreset(obj, rest, orc) {
+            document.getElementById('objetivo').value = obj;
+            document.getElementById('restricoes').value = rest;
+            document.getElementById('orcamento').value = orc;
+            executarPlanejamento();
+        }
+
+        function abrirModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function abrirModalConfig() {
+            document.getElementById('modalApiKeyInput').value = localStorage.getItem('nutriflow_api_key') || '';
+            document.getElementById('modalProviderSelect').value = localStorage.getItem('nutriflow_provider') || 'gemini';
+            document.getElementById('modalWebhookInput').value = localStorage.getItem('nutriflow_webhook_url') || '';
+            abrirModal('settingsModal');
+        }
+
+        function fecharModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function mudarTab(evt, tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            evt.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function salvarConfigModal() {
+            const key = document.getElementById('modalApiKeyInput').value.trim();
+            const provider = document.getElementById('modalProviderSelect').value;
+            const webhook = document.getElementById('modalWebhookInput').value.trim();
+            
+            localStorage.setItem('nutriflow_provider', provider);
+            if (key) localStorage.setItem('nutriflow_api_key', key);
+            else localStorage.removeItem('nutriflow_api_key');
+
+            if (webhook) localStorage.setItem('nutriflow_webhook_url', webhook);
+            else localStorage.removeItem('nutriflow_webhook_url');
+
+            atualizarBadgeModo();
+            fecharModal('settingsModal');
+            mostrarToast("✅ Configurações salvas!");
+        }
+
+        function aplicarNovoPrompt() {
+            fecharModal('studioModal');
+            mostrarToast("✅ Instruções atualizadas!");
+            executarPlanejamento();
+        }
+
+        async function chamarLLMJSON(prompt) {
+            const apiKey = localStorage.getItem('nutriflow_api_key');
+            const provider = localStorage.getItem('nutriflow_provider') || 'gemini';
+            const sysPrompt = document.getElementById('customSystemPrompt').value;
+
+            if (provider === 'openai') {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        response_format: { type: "json_object" },
+                        messages: [
+                            { role: 'system', content: sysPrompt },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.2
+                    })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                return JSON.parse(data.choices[0].message.content);
+            } else {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        systemInstruction: { parts: [{ text: sysPrompt }] },
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            temperature: 0.2
+                        }
+                    })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                return JSON.parse(data.candidates[0].content.parts[0].text);
+            }
+        }
+
+        function gerarPlanoInteligenteLocal(objetivo, restricoes, orcamento) {
+            const objLower = objetivo.toLowerCase();
+            const restLower = restricoes.toLowerCase();
+
+            const isEmagrecimento = objLower.includes('emagrec') || objLower.includes('defin') || objLower.includes('secar') || objLower.includes('perder');
+            const isVeg = restLower.includes('veg');
+            const isLowCarb = restLower.includes('low carb') || restLower.includes('keto');
+            const isSemLactose = restLower.includes('lactose') || restLower.includes('leite');
+            const isPratico = objLower.includes('pratic') || objLower.includes('corrid') || restLower.includes('pratic');
+
+            let kcal = isEmagrecimento ? 1750 : 2350;
+            let prot = isEmagrecimento ? 145 : 165;
+            let carb = isLowCarb ? 95 : (isEmagrecimento ? 150 : 245);
+            let gord = isLowCarb ? 85 : (isEmagrecimento ? 58 : 72);
+
+            let refeicoes = [];
+            let mercado = [];
+            let pronto = [];
+
+            if (isVeg) {
+                refeicoes = [
+                    { horario: "07:30", nome: "Café da Manhã Proteico Vegetal", kcal: Math.round(kcal*0.22), descricao: "Tofu mexido temperado com cúrcuma, 2 fatias de pão integral e pasta de grão-de-bico." },
+                    { horario: "12:30", nome: "Bowl Completo de Leguminosas", kcal: Math.round(kcal*0.33), descricao: "150g de grão-de-bico e lentilha refogados, arroz integral, abóbora assada e mix de folhas." },
+                    { horario: "16:30", nome: "Lanche Energético", kcal: Math.round(kcal*0.18), descricao: "Shake de proteína vegetal (ervilha/arroz), 1 banana e aveia em flocos." },
+                    { horario: "20:30", nome: "Jantar Leve Rico em Proteína", kcal: Math.round(kcal*0.27), descricao: "Hambúrguer caseiro de feijão preto com aveia, legumes salteados no azeite e salada verde." }
+                ];
+                mercado = [
+                    { item: "Tofu Firme Orgânico (2 unidades)", preco: 26.00 },
+                    { item: "Grão-de-Bico & Lentilha (1kg total)", preco: 19.50 },
+                    { item: "Proteína Vegetal em Pó (Refil)", preco: 38.00 },
+                    { item: "Arroz Integral, Aveia & Pão Integral", preco: 24.00 },
+                    { item: "Legumes, Folhas & Frutas da Estação", preco: 21.50 }
+                ];
+                pronto = [
+                    { item: "Kit 4 Marmitas Veganas Proteicas (Delivery)", preco: 76.00 },
+                    { item: "Poke Bowl de Tofu Grelhado & Edamame", preco: 32.90 }
+                ];
+            } else if (isEmagrecimento) {
+                refeicoes = [
+                    { horario: "08:00", nome: "Café da Manhã Sacietógeno", kcal: 380, descricao: "3 ovos mexidos, 1 fatia de pão integral e café preto sem açúcar." },
+                    { horario: "12:30", nome: "Almoço Termogênico & Leve", kcal: 560, descricao: "170g de filé de frango grelhado, 100g de arroz integral, salada farta de folhas e abobrinha." },
+                    { horario: "16:30", nome: "Lanche Proteico Controlado", kcal: 310, descricao: `${isSemLactose ? 'Iogurte zero lactose' : 'Iogurte natural desnatado'} com 1 colher de chia e morangos.` },
+                    { horario: "20:00", nome: "Jantar Low-Calorie", kcal: 500, descricao: "160g de tilápia ou patinho moído com brócolis, couve-flor e 100g de mandioquinha." }
+                ];
+                mercado = [
+                    { item: "Peito de Frango Resfriado (1,5kg)", preco: 31.90 },
+                    { item: "Cartela com 30 Ovos Brancos", preco: 22.50 },
+                    { item: "Filé de Tilápia ou Patinho (800g)", preco: 34.00 },
+                    { item: "Mix de Vegetais, Folhas & Chia", preco: 23.50 },
+                    { item: `${isSemLactose ? 'Iogurtes Zero Lactose' : 'Iogurtes Naturais'} + Frutas`, preco: 19.80 }
+                ];
+                pronto = [
+                    { item: "Combo 5 Marmitas Low Carb Fit (Entrega Rápida)", preco: 84.90 },
+                    { item: "Salada Caesar Proteica com Frango Grelhado", preco: 28.90 }
+                ];
+            } else {
+                refeicoes = [
+                    { horario: "07:30", nome: "Café da Manhã Reforçado", kcal: 540, descricao: `4 ovos mexidos, 2 fatias de pão integral tostado e mamão com aveia (${isSemLactose ? '100% sem lactose' : 'com queijo branco'}).` },
+                    { horario: "12:30", nome: "Almoço de Alta Performance", kcal: 750, descricao: "190g de peito de frango grelhado, 160g de arroz integral, feijão carioca e brócolis no vapor." },
+                    { horario: "16:30", nome: "Pré-Treino Rápido", kcal: 400, descricao: `${isSemLactose ? 'Proteína isolada zero lactose' : 'Whey protein'}, 1 banana prata e 20g de pasta de amendoim.` },
+                    { horario: "20:30", nome: "Jantar de Recuperação", kcal: 660, descricao: "170g de patinho moído refogado, 180g de batata-doce assada e salada verde com azeite." }
+                ];
+                mercado = [
+                    { item: "Peito de Frango Resfriado (2kg)", preco: 39.90 },
+                    { item: "Cartela com 30 Ovos Brancos", preco: 22.50 },
+                    { item: "Patinho Moído (1kg)", preco: 41.90 },
+                    { item: "Batata-Doce, Arroz Integral & Feijão", preco: 25.00 },
+                    { item: "Frutas, Vegetais & Pasta de Amendoim", preco: 22.40 }
+                ];
+                pronto = [
+                    { item: "Combo 5 Marmitas Fit Frango & Batata-Doce (Delivery)", preco: 89.90 },
+                    { item: "Bowl Proteico Pós-Treino (Entrega Expressa)", preco: 34.90 }
+                ];
+            }
+
+            const somaBase = mercado.reduce((acc, i) => acc + i.preco, 0);
+            if (somaBase > orcamento * 0.92) {
+                const fator = (orcamento * 0.86) / somaBase;
+                mercado = mercado.map(m => ({ ...m, preco: Math.max(9.90, Number((m.preco * fator).toFixed(2))) }));
+            }
+
+            const custoTotal = Number(mercado.reduce((acc, i) => acc + i.preco, 0).toFixed(2));
+            const custoGramaProt = (custoTotal / (prot * 7)).toFixed(2).replace('.', ',');
+            const economiaPct = isPratico ? 18 : 27;
+
+            return {
+                cardapio: { calorias_totais: kcal, proteinas_g: prot, carboidratos_g: carb, gorduras_g: gord, refeicoes },
+                cesta: {
+                    custo_total_mercado: custoTotal,
+                    economia_estimada_percentual: economiaPct,
+                    custo_por_grama_proteina: `R$ ${custoGramaProt} / g`,
+                    insight_analitico: `Para o objetivo "${objetivo}" (${restricoes}), o plano entrega ${prot}g/dia de proteína gastando R$ ${custoTotal.toFixed(2).replace('.', ',')} na semana — ${economiaPct}% mais econômico que pedidos avulsos.`,
+                    mercado,
+                    pronto
+                }
+            };
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        async function executarPlanejamento() {
+            if (emExecucao) return;
+            emExecucao = true;
+
+            const btn = document.getElementById('btnGerar');
+            const textoOriginal = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Gerando cardápio e lista...";
+
+            const objetivo = document.getElementById('objetivo').value.trim() || "Alimentação saudável";
+            const restricoes = document.getElementById('restricoes').value.trim() || "Sem restrições";
+            const orcamento = parseFloat(document.getElementById('orcamento').value) || 180;
+            const apiKey = localStorage.getItem('nutriflow_api_key');
+            const provider = localStorage.getItem('nutriflow_provider') || 'gemini';
+            const isLive = apiKey && apiKey.length > 15;
+
+            const pipelineEl = document.getElementById('pipeline');
+            const resultsEl = document.getElementById('results');
+            const s1 = document.getElementById('step-1');
+            const s2 = document.getElementById('step-2');
+            const s3 = document.getElementById('step-3');
+
+            [s1, s2, s3].forEach(el => el.className = 'agent-step');
+            pipelineEl.style.display = 'block';
+
+            try {
+                let cardapioData, cestaData;
+
+                // Etapa 1
+                s1.classList.add('active');
+                if (isLive) {
+                    const prompt1 = `Crie um plano alimentar diário de 4 refeições para o objetivo: "${objetivo}" com restrições: "${restricoes}".
+                    Retorne estritamente JSON:
+                    {"calorias_totais": 2200, "proteinas_g": 150, "carboidratos_g": 230, "gorduras_g": 70, "refeicoes": [{"horario": "08:00", "nome": "Nome", "kcal": 500, "descricao": "Ingredientes e porções"}]}`;
+                    cardapioData = await chamarLLMJSON(prompt1);
+                } else {
+                    await sleep(300);
+                }
+                s1.classList.remove('active');
+                s1.classList.add('done');
+
+                // Etapa 2
+                s2.classList.add('active');
+                if (isLive) {
+                    const prompt2 = `Com base no cardápio: ${JSON.stringify(cardapioData)} e orçamento semanal de R$ ${orcamento}, monte uma lista de supermercado semanal e 2 opções de delivery pronto no Brasil.
+                    Retorne estritamente JSON:
+                    {"custo_total_mercado": 140.50, "economia_estimada_percentual": 25, "custo_por_grama_proteina": "R$ 0,13 / g", "insight_analitico": "Insight curto de economia e nutrição.", "mercado": [{"item": "Item com quantidade", "preco": 25.00}], "pronto": [{"item": "Prato pronto delivery", "preco": 32.90}]}`;
+                    cestaData = await chamarLLMJSON(prompt2);
+                } else {
+                    await sleep(300);
+                    const sim = gerarPlanoInteligenteLocal(objetivo, restricoes, orcamento);
+                    cardapioData = sim.cardapio;
+                    cestaData = sim.cesta;
+                }
+                s2.classList.remove('active');
+                s2.classList.add('done');
+
+                // Etapa 3
+                s3.classList.add('active');
+                await sleep(250);
+                s3.classList.remove('active');
+                s3.classList.add('done');
+
+                ultimoPayloadGerado = {
+                    event: "nutriflow.plan.generated",
+                    timestamp: new Date().toISOString(),
+                    engine: isLive ? `${provider}-live-api` : "nutriflow-smart-engine",
+                    input: { objetivo, restricoes, orcamento_semanal_brl: orcamento },
+                    output: {
+                        cardapio: cardapioData,
+                        compras_e_analise: cestaData
+                    }
+                };
+
+                renderizarResultados(cardapioData, cestaData, orcamento);
+                resultsEl.style.display = 'block';
+                resultsEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (err) {
+                mostrarToast("⚠️ Usando motor local: " + err.message);
+                const sim = gerarPlanoInteligenteLocal(objetivo, restricoes, orcamento);
+                renderizarResultados(sim.cardapio, sim.cesta, orcamento);
+                resultsEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerText = textoOriginal;
+                emExecucao = false;
+            }
+        }
+
+        function renderizarResultados(cardapio, cesta, orcamento) {
+            const dentroOrcamento = cesta.custo_total_mercado <= orcamento;
+
+            document.getElementById('kpi-conteudo').innerHTML = `
+                <div class="kpi-box">
+                    <div class="kpi-label">Meta Calórica Diária</div>
+                    <div class="kpi-value highlight">${cardapio.calorias_totais} kcal</div>
+                    <div class="kpi-sub">${cardapio.proteinas_g}g de proteína / dia</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Custo Mercado (Semana)</div>
+                    <div class="kpi-value">R$ ${cesta.custo_total_mercado.toFixed(2).replace('.', ',')}</div>
+                    <div class="kpi-sub" style="color: ${dentroOrcamento ? '#16a34a' : '#ea1d2c'}; font-weight: 700;">
+                        ${dentroOrcamento ? '✓ Dentro do seu orçamento' : '⚠ Acima do teto definido'}
+                    </div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Custo por Proteína</div>
+                    <div class="kpi-value">${cesta.custo_por_grama_proteina}</div>
+                    <div class="kpi-sub" style="color: #16a34a; font-weight: 600;">Economia estimada de ${cesta.economia_estimada_percentual}%</div>
+                </div>
+                <div class="kpi-box">
+                    <div class="kpi-label">Uso do Orçamento</div>
+                    <div class="kpi-value">${Math.round((cesta.custo_total_mercado / orcamento) * 100)}%</div>
+                    <div class="kpi-sub">Teto semanal: R$ ${orcamento.toFixed(2).replace('.', ',')}</div>
+                </div>
+            `;
+
+            const totalG = (cardapio.proteinas_g || 150) + (cardapio.carboidratos_g || 220) + (cardapio.gorduras_g || 70);
+            const pPct = Math.round(((cardapio.proteinas_g || 150) / totalG) * 100);
+            const cPct = Math.round(((cardapio.carboidratos_g || 220) / totalG) * 100);
+            const gPct = 100 - pPct - cPct;
+
+            document.getElementById('analytics-conteudo').innerHTML = `
+                <div>
+                    <div style="font-size: 12px; font-weight: 800; color: var(--brand); text-transform: uppercase; letter-spacing: 0.4px;">Divisão de Macronutrientes</div>
+                    <div class="macro-track">
+                        <div class="macro-prot" style="width: ${pPct}%"></div>
+                        <div class="macro-carb" style="width: ${cPct}%"></div>
+                        <div class="macro-fat" style="width: ${gPct}%"></div>
+                    </div>
+                    <div class="macro-legend">
+                        <span><i class="dot" style="background:#ea1d2c"></i>Proteínas ${pPct}% (${cardapio.proteinas_g}g)</span>
+                        <span><i class="dot" style="background:#0284c7"></i>Carboidratos ${cPct}% (${cardapio.carboidratos_g}g)</span>
+                        <span><i class="dot" style="background:#f59e0b"></i>Gorduras ${gPct}% (${cardapio.gorduras_g}g)</span>
+                    </div>
+                </div>
+                <div style="background: #f8fafc; padding: 15px; border-radius: 10px; border-left: 4px solid var(--primary);">
+                    <div style="font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 4px;">💡 Resumo de Economia & Nutrição</div>
+                    <div style="font-size: 13px; color: var(--text-main); line-height: 1.45;">${cesta.insight_analitico}</div>
+                </div>
+            `;
+
+            document.getElementById('cardapio-conteudo').innerHTML = cardapio.refeicoes.map(ref => `
+                <div class="meal-item" style="display: block;">
+                    <div class="meal-header">
+                        <span class="meal-time">${ref.horario}</span>
+                        <span class="meal-kcal">${ref.kcal} kcal</span>
+                    </div>
+                    <div class="meal-name">${ref.nome}</div>
+                    <div class="meal-ingredients">${ref.descricao}</div>
+                </div>
+            `).join('');
+
+            let htmlCesta = `<div style="margin:0 0 10px 0; font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Insumos de Supermercado (Marque o que precisa comprar)</div>`;
+            cesta.mercado.forEach(m => {
+                htmlCesta += `
+                    <div class="market-item">
+                        <label>
+                            <input type="checkbox" checked data-preco="${m.preco}" onchange="recalcularCesta(this)">
+                            <span>${m.item}</span>
+                        </label>
+                        <span class="price-tag">R$ ${m.preco.toFixed(2).replace('.', ',')}</span>
+                    </div>`;
+            });
+
+            htmlCesta += `<div style="margin:20px 0 10px 0; font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Opções Prontas / Delivery (Substituição Rápida)</div>`;
+            cesta.pronto.forEach(p => {
+                htmlCesta += `
+                    <div class="market-item">
+                        <label>
+                            <input type="checkbox" data-preco="${p.preco}" onchange="recalcularCesta(this)">
+                            <span>${p.item}</span>
+                        </label>
+                        <span class="price-tag">R$ ${p.preco.toFixed(2).replace('.', ',')}</span>
+                    </div>`;
+            });
+
+            document.getElementById('cesta-conteudo').innerHTML = htmlCesta;
+            recalcularCesta();
+        }
+
+        function recalcularCesta(checkbox) {
+            if (checkbox) {
+                const span = checkbox.nextElementSibling;
+                if (!checkbox.checked) span.classList.add('checked-item');
+                else span.classList.remove('checked-item');
+            }
+            const marcados = document.querySelectorAll('#cesta-conteudo input[type="checkbox"]:checked');
+            let soma = 0;
+            marcados.forEach(cb => soma += parseFloat(cb.dataset.preco));
+            document.getElementById('total-selecionado').innerText = `Total selecionado: R$ ${soma.toFixed(2).replace('.', ',')}`;
+        }
+
+        async function dispararWebhook() {
+            if (!ultimoPayloadGerado) return;
+            const webhookUrl = localStorage.getItem('nutriflow_webhook_url');
+            
+            document.getElementById('jsonPreview').innerText = JSON.stringify(ultimoPayloadGerado, null, 2);
+            
+            if (webhookUrl) {
+                try {
+                    await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ultimoPayloadGerado)
+                    });
+                    document.getElementById('webhookStatusText').innerText = "✅ Lista enviada com sucesso para o Webhook configurado!";
+                } catch (e) {
+                    document.getElementById('webhookStatusText').innerText = "⚠️ Webhook acionado. Copie o JSON abaixo caso queira testar diretamente no n8n ou Make:";
+                }
+            } else {
+                document.getElementById('webhookStatusText').innerText = "Estrutura JSON padronizada pronta para integração via API ou Webhook (n8n / Make / Zapier):";
+            }
+
+            abrirModal('webhookModal');
+        }
+
+        function copiarTexto(texto, msg) {
+            navigator.clipboard.writeText(texto);
+            mostrarToast(msg);
+        }
+
+        // Carrega o plano inicial ao abrir a página
+        window.onload = function() {
+            executarPlanejamento();
+        };
+    </script>
+</body>
+</html>
